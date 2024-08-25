@@ -1,7 +1,16 @@
 const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
+const fs = require("fs");
 
-const dbPath = path.resolve(__dirname, "../data/blog.db");
+// Use a relative path for Render deployment
+const dataDir = path.resolve(__dirname, "data");
+
+// Ensure the data directory exists
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
+
+const dbPath = path.resolve(dataDir, "blog.db");
 
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
@@ -10,6 +19,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
     console.log("Connected to database");
   }
 });
+
+// Rest of your code for table schema and dummy data insertion
 
 // Function to check if a column exists in a table
 const columnExists = (tableName, columnName, callback) => {
