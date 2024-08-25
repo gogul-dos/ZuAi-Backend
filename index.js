@@ -1,7 +1,15 @@
 const express = require("express");
 const postRoutes = require("./routes/postRoutes");
 
+const express = require("express");
+const cors = require("cors");
 const app = express();
+
+// Enable CORS
+app.use(cors());
+
+// Your routes and middleware
+app.use("/api/posts", postsRouter); // Example route
 
 // Middleware
 app.use(express.json());
