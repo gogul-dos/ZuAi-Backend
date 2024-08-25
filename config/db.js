@@ -2,10 +2,8 @@ const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
 const fs = require("fs");
 
-// Use a relative path for Render deployment
-const dataDir = path.resolve(__dirname, "data");
-
 // Ensure the data directory exists
+const dataDir = path.resolve(__dirname, "../data");
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
@@ -20,38 +18,50 @@ const db = new sqlite3.Database(dbPath, (err) => {
   }
 });
 
-// Rest of your code for table schema and dummy data insertion
+// Create the posts table if it doesn't exist
+db.serialize(() => {
+  db.run(
+    `
+        CREATE TABLE IF NOT EXISTS posts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            excerpt TEXT,
+            content TEXT,
+            picture_url TEXT
+        )
+    `,
+    (err) => {
+      if (err) {
+        console.error("Error creating posts table", err);
+      } else {
+        console.log("Posts table created or already exists");
+      }
+    }
+  );
 
-// Function to check if a column exists in a table
-const columnExists = (tableName, columnName, callback) => {
-  db.all(`PRAGMA table_info(${tableName})`, (err, columns) => {
+  // Check if the picture_url column exists
+  db.all("PRAGMA table_info(posts)", (err, columns) => {
     if (err) {
-      callback(err);
+      console.error("Error checking columns", err);
+      return;
+    }
+
+    const hasPictureUrlColumn = columns.some(
+      (column) => column.name === "picture_url"
+    );
+
+    if (!hasPictureUrlColumn) {
+      db.run("ALTER TABLE posts ADD COLUMN picture_url TEXT", (err) => {
+        if (err) {
+          console.error("Error adding column picture_url", err);
+        } else {
+          console.log("Column picture_url added to posts table");
+        }
+      });
     } else {
-      const columnExists = columns.some((column) => column.name === columnName);
-      callback(null, columnExists);
+      console.log("Column picture_url already exists");
     }
   });
-};
-
-// Add the picture_url column if it doesn't exist
-columnExists("posts", "picture_url", (err, exists) => {
-  if (err) {
-    console.error("Error checking column existence", err);
-    return;
-  }
-
-  if (!exists) {
-    db.run("ALTER TABLE posts ADD COLUMN picture_url TEXT", (err) => {
-      if (err) {
-        console.error("Error adding column picture_url", err);
-      } else {
-        console.log("Column picture_url added to posts table");
-      }
-    });
-  } else {
-    console.log("Column picture_url already exists");
-  }
 });
 
 // Insert dummy data if the table is empty
